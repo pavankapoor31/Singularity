@@ -18,6 +18,20 @@ function createSingularEntity() {
             }
           }
         };
+      },
+
+      [Symbol.asyncIterator]() {
+        console.log("Async Iterated");
+        let i = 0;
+        return {
+          async next() {
+            if (i++ < 3) {
+              return { value: `⏳ ${i}`, done: false };
+            } else {
+              return { done: true };
+            }
+          }
+        };
       }
     };
   
@@ -25,44 +39,49 @@ function createSingularEntity() {
     const proxy = new Proxy(trap, {
       get(target, prop, receiver) {
           
-          // Awaitable via `then`
-          if (prop === 'then') {
-            return (resolve, reject) => {
-              target.__hasBeenAwaited = true;
-              console.log("Awaited");
-              resolve("✅ Await complete");
-              return new Promise(() => {}); // to allow chaining
-            };
-          }
+        // Awaitable via `then`
+        if (prop === 'then') {
+          return (resolve, reject) => {
+            target.__hasBeenAwaited = true;
+            console.log("Awaited");
+            resolve("✅ Await complete");
+            return new Promise(() => {}); // to allow chaining
+          };
+        }
 
-          if (prop === 'catch') {
-            return function (rejectHandler) {
-              console.log("Caught something? 😬");
-              // For simulation purposes, we'll just resolve something
-              return Promise.resolve("🫣 but everything's fine");
-            };
-          }
-        
-          if (prop === 'finally') {
-            return function (handler) {
-              console.log("Finally block executed");
-              handler(); // Call the handler directly
-              return Promise.resolve(); // to allow chaining
-            };
-          }
-        
-        // Iterable protocol
+        if (prop === 'catch') {
+          return function (rejectHandler) {
+            console.log("Caught something? 😬");
+            return Promise.resolve("🫣 but everything's fine");
+          };
+        }
+      
+        if (prop === 'finally') {
+          return function (handler) {
+            console.log("Finally block executed");
+            handler();
+            return Promise.resolve();
+          };
+        }
+      
+        // Iterable protocols
         if (prop === Symbol.iterator) {
-            return iterable[Symbol.iterator];
+          return iterable[Symbol.iterator];
+        }
+
+        if (prop === Symbol.asyncIterator) {
+          return iterable[Symbol.asyncIterator];
         }
         
-        console.log(`Accessed property: '${String(prop)}'`);
-        
-        // Coercion behavior
         if (prop === Symbol.toPrimitive) {
           return () => "🌀 Wizard Entity";
         }
-  
+
+        if (prop === Symbol.toStringTag) {
+          return "🌌 Singularity";
+        }
+
+        console.log(`Accessed property: '${String(prop)}'`);
         return Reflect.get(target, prop, receiver);
       },
 
@@ -78,28 +97,40 @@ function createSingularEntity() {
   
     return proxy;
 }
-  
-  const singularity = createSingularEntity();
-  
-  // can be invoked as a Function with any number of arguments
-  singularity("Hello", "Welcome to the Void"); 
-  
-  // can be awaited in async context
-  (async () => {
-    const result = await singularity;
-    console.log(result);
-  })();
 
-  // can be chained with `then` and `catch` as a Promise 
-  singularity
+// 🔮 Usage
+const singularity = createSingularEntity();
+
+// 🗣️ Callable
+singularity("Hello", "Welcome to the Void");
+
+// ⏳ Awaitable
+(async () => {
+  const result = await singularity;
+  console.log(result);
+})();
+
+// 🔗 Thenable + Catchable
+singularity
   .then((result) => console.log(result))
   .catch((error) => console.error("Error:", error));
 
-  // can be Iterated over in any for loop
-  for (const val of singularity) {
-    console.log("Looping:", val);
-  }
+// 🔁 Iterable
+for (const val of singularity) {
+  console.log("Looping:", val);
+}
 
-  // Set and Access any prop on this JS singularity
+// 🔄 Async Iterable
+(async () => {
+  for await (const val of singularity) {
+    console.log("Async Looping:", val);
+  }
+})();
+
+// 🧠 Property Get/Set
 singularity.fooBar = "Some FooBar value";
 console.log("singularity.fooBar = ", singularity.fooBar);
+
+// 🧪 Coercion
+console.log("Coerced: " + singularity);
+console.log(Object.prototype.toString.call(singularity));
